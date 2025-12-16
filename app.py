@@ -1,5 +1,6 @@
 import streamlit as st
 from fpdf import FPDF
+import tempfile
 import os
 
 # --- PAGE CONFIG ---
@@ -9,9 +10,7 @@ st.markdown("Fill in the details below to generate a professional PDF quotation.
 
 # --- SIDEBAR INPUTS ---
 with st.sidebar:
-    # REMOVED: File Uploader
-    # ADDED: Info message
-    st.info("✅ Using Company Logo from system.")
+    st.info("✅ System is looking for 'logo.png' or 'Logo.png' in your GitHub repository.")
     
     st.header("1. Quote Metadata")
     quote_ref = st.text_input("Quote Reference", "YPDEC25BB019IMP")
@@ -86,18 +85,30 @@ total_del = c3.text_input("Total Delivery Cost", "$1,490.00")
 # --- PDF CLASS ---
 class PDF(FPDF):
     def header(self):
-        # UPDATED LOGIC: Look for 'logo.png' in the same folder
-        logo_path = "logo.png" 
+        # --- LOGO LOGIC FIX ---
+        # 1. Get the absolute path to the folder where this script is running
+        current_dir = os.path.dirname(os.path.abspath(__file__))
         
-        if os.path.exists(logo_path):
+        # 2. Check for both 'logo.png' and 'Logo.png' to handle case sensitivity
+        logo_path = None
+        possible_names = ["logo.png", "Logo.png"]
+        
+        for name in possible_names:
+            check_path = os.path.join(current_dir, name)
+            if os.path.exists(check_path):
+                logo_path = check_path
+                break
+        
+        # 3. Draw the image if found, else show error text
+        if logo_path:
             self.image(logo_path, x=10, y=10, w=28)
         else:
-            # Fallback if file isn't uploaded to GitHub yet
             self.set_font("Arial", "B", 10)
             self.set_xy(10, 10)
             self.set_text_color(255, 0, 0)
             self.cell(30, 10, "LOGO MISSING", 0, 0)
 
+        # Header Text
         self.set_xy(110, 10)
         self.set_font("Arial", "B", 12)
         self.set_text_color(80, 80, 80)
@@ -332,7 +343,10 @@ def generate_pdf():
     
     # Prepared By
     pdf.ln(8)
-    if pdf.get_y() > 240: pdf.add_page()
+    # Check if we need a new page (Threshold increased to 255 to try and keep it on Page 2 if possible)
+    if pdf.get_y() > 255: 
+        pdf.add_page()
+    
     pdf.set_font("Arial", "B", 10)
     pdf.cell(0, 5, "Prepared by:", 0, 1)
     pdf.ln(1)
