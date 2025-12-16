@@ -1,6 +1,5 @@
 import streamlit as st
 from fpdf import FPDF
-import tempfile
 import os
 
 # --- PAGE CONFIG ---
@@ -10,15 +9,16 @@ st.markdown("Fill in the details below to generate a professional PDF quotation.
 
 # --- SIDEBAR INPUTS ---
 with st.sidebar:
-    st.header("1. Upload Logo")
-    uploaded_logo = st.file_uploader("Upload Logo (PNG/JPG)", type=["png", "jpg", "jpeg"])
+    # REMOVED: File Uploader
+    # ADDED: Info message
+    st.info("✅ Using Company Logo from system.")
     
-    st.header("2. Quote Metadata")
+    st.header("1. Quote Metadata")
     quote_ref = st.text_input("Quote Reference", "YPDEC25BB019IMP")
     quote_date = st.text_input("Date", "December 16, 2025")
     validity = st.text_input("Validity", "30 Days")
     
-    st.header("3. Prepared By")
+    st.header("2. Prepared By")
     prep_name = st.text_input("Name", "Kaan Gul")
     prep_title = st.text_input("Title", "Director of Logistics | YouParcel")
     prep_phone = st.text_input("Phone", "(201) 782-6081")
@@ -35,7 +35,6 @@ with col2:
     equipment = st.text_input("Equipment", "40' High Cube")
 
 st.subheader("Ocean Freight Options")
-# DEFAULTS RESTORED TO MATCH YOUR ORIGINAL REQUEST
 c1_def = ["MSC", "EXCLUDED", "$1,816.80", "+$50 PS +$25 AMS", "$1,891.80*", "ISPS Included"]
 c2_def = ["COSCO", "EXCLUDED", "$1,274.40", "+$50 PS +$25 AMS", "$1,349.40*", "ETS Included"]
 c3_def = ["CMA", "INCLUDED", "$1,680.00", "+$50 PS +$32 AMS", "$1,762.00", "Best Value"]
@@ -87,19 +86,17 @@ total_del = c3.text_input("Total Delivery Cost", "$1,490.00")
 # --- PDF CLASS ---
 class PDF(FPDF):
     def header(self):
-        if uploaded_logo:
-            try:
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
-                    tmp_file.write(uploaded_logo.getvalue())
-                    tmp_path = tmp_file.name
-                self.image(tmp_path, x=10, y=10, w=28)
-                os.unlink(tmp_path)
-            except:
-                pass
+        # UPDATED LOGIC: Look for 'logo.png' in the same folder
+        logo_path = "logo.png" 
+        
+        if os.path.exists(logo_path):
+            self.image(logo_path, x=10, y=10, w=28)
         else:
+            # Fallback if file isn't uploaded to GitHub yet
             self.set_font("Arial", "B", 10)
             self.set_xy(10, 10)
-            self.cell(30, 10, "No Logo Uploaded", 0, 0)
+            self.set_text_color(255, 0, 0)
+            self.cell(30, 10, "LOGO MISSING", 0, 0)
 
         self.set_xy(110, 10)
         self.set_font("Arial", "B", 12)
